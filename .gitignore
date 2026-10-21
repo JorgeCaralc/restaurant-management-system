@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# Archivos de grupos del "robot recepcionista": nunca se suben (lo exige el enunciado)
+tables*
