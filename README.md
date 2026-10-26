@@ -263,6 +263,7 @@ and `UnicodeDecodeError` are subclasses of `ValueError`. The program never close
 |---|---|---|---|
 | File or `tables/` folder does not exist | `open()` / folder listing in `storage.py` | `main.py` | Message + menu again |
 | File is not valid JSON | `json.load` in `storage.py` | `main.py` | Message + menu again |
+| JSON has the wrong shape or invalid data (e.g. `[4, 2]` or `[{"people": 4}]`) | `storage.py` (`ValueError`) | `main.py` | Message saying what is wrong + menu again |
 | File exists but cannot be opened (no permission, or the path is a folder) | `open()` in `storage.py` (`OSError`) | `main.py` | Message + menu again |
 | File is not saved in UTF-8 | Reading in `storage.py` (`UnicodeDecodeError`) | `main.py` | Message + menu again |
 | The menu cannot be saved (e.g. file locked) | `open()` in `save_restaurant_data` (`OSError`) | `main.py` | Option 5: message + menu again (the dish stays in memory and is saved again on exit). Exit: message, then the program closes |
