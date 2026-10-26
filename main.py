@@ -19,5 +19,17 @@ def show_menu():
     print("7. Exit")
 
 
+def main():
+    """Run the main menu loop until the user chooses to exit."""
+    while True:
+        show_menu()
+        option = input("Choose an option (1-7): ").strip()
+        if option == "7":
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid option.")
+
+
 if __name__ == "__main__":
-    show_menu()
+    main()
