@@ -203,7 +203,7 @@ with a clear message, never a `KeyError` or `TypeError`:
 | Function | What it does |
 |---|---|
 | `main()` | Menu loop. Holds `restaurant` (`None` until option 1) and the restaurant file path. Called from `if __name__ == "__main__":` |
-| `ask_number(prompt)` | Asks until the user types a valid number greater than 0 and returns it as a float. Never crashes |
+| `ask_number(prompt)` | Asks until the user types a valid number greater than 0 and returns it as a float. Rejects `inf` and `nan` (`math.isfinite`). Used for prices. Never crashes |
 | `choose_table(tables)` | Shows the given tables and asks for a table number. Returns **the chosen table dict**, or `None` if the user presses Enter without typing (cancel). Only accepts numbers from the list. `main` checks that the list is not empty before calling it |
 | One function per option | Load restaurant, load groups, take an order, charge a table, grow the menu, show status, exit |
 
@@ -215,6 +215,8 @@ What each option does:
 2. **Load new group requests:** shows the `.json` files in `tables/` (`list_group_files`),
    the user picks one, `load_groups` → `add_to_waiting_list` → `seat_waiting_groups`.
    Shows which groups were seated (and where), which were rejected and which are waiting.
+    If there are no files, it says so and goes back. The user picks a file by its number
+   (Enter = cancel).
 3. **Take an order:** if there are no seated tables, or the menu is empty, it says so and
    goes back. Otherwise `choose_table` with the seated tables, then for each customer asks
    dish by dish (checked with `find_dish`); a customer finishes with an empty line once they
@@ -229,8 +231,8 @@ What each option does:
    occupancy and free seats, tables in use, every active table (number, customers, status,
    ordered dishes with their saved price), the waiting list, the full menu with prices,
    and earnings.
-7. **Exit:** if there are tables or waiting groups left, asks for confirmation. Saves the
-   menu and closes.
+7. **Exit:** if no restaurant is loaded, it just closes. Otherwise, if there are tables or
+   waiting groups left, asks for confirmation (Enter = no). Saves the menu and closes.
 
 ---
 
@@ -252,21 +254,25 @@ What each option does:
 
 ## 9. Error handling summary
 
-Every time `main.py` calls a function of `storage.py` (to load **or to save**), it uses
-`try/except`, shows a clear message and goes back to the menu. The program never closes
-because of a file.
+Every time `main.py` calls a function of `storage.py` (to load **or to save**), it catches
+`(OSError, ValueError)`, shows a clear message and goes back to the menu. These two are enough:
+`FileNotFoundError` and `PermissionError` are subclasses of `OSError`, and `json.JSONDecodeError`
+and `UnicodeDecodeError` are subclasses of `ValueError`. The program never closes because of a file.
 
 | Situation | Raised by | Caught by | User sees |
 |---|---|---|---|
 | File or `tables/` folder does not exist | `open()` / folder listing in `storage.py` | `main.py` | Message + menu again |
 | File is not valid JSON | `json.load` in `storage.py` | `main.py` | Message + menu again |
 | JSON has the wrong shape or invalid data (e.g. `[4, 2]` or `[{"people": 4}]`) | `storage.py` (`ValueError`) | `main.py` | Message saying what is wrong + menu again |
-| The menu cannot be saved (e.g. file locked) | `open()` in `save_restaurant_data` | `main.py` | Message + the program keeps running |
+| File exists but cannot be opened (no permission, or the path is a folder) | `open()` in `storage.py` (`OSError`) | `main.py` | Message + menu again |
+| File is not saved in UTF-8 | Reading in `storage.py` (`UnicodeDecodeError`) | `main.py` | Message + menu again |
+| The menu cannot be saved (e.g. file locked) | `open()` in `save_restaurant_data` (`OSError`) | `main.py` | Option 5: message + menu again (the dish stays in memory and is saved again on exit). Exit: message, then the program closes |
 | User types a non-number as a price | `float()` in `main.py` | `ask_number` | Asked again |
 | User types a table number that is not in the list | — | `choose_table` | Asked again |
 | Dish not on the menu | — (`find_dish` returns `None`) | `main.py` | Asked again |
 | Group does not fit right now | — (`seat_group` returns `None`) | — | It stays in the waiting list |
 | Group bigger than the capacity | — (`add_to_waiting_list` returns it) | `main.py` | "Group of N rejected: bigger than the restaurant" |
+| Invalid menu option (`abc`, `9`, empty) | — (`main.py` checks the option) | `main.py` | "Invalid option" + menu again |
 
 ---
 
