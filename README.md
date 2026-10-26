@@ -53,14 +53,14 @@ restaurant-management-system/
 
 | Module / task | Owner | Branch |
 |---|---|---|
-| `main.py` (CLI): menu loop and options 1, 2, 5, 6, 7 | _to be decided_ | `feature/cli` |
-| `restaurant_logic.py` (logic) + options 3 and 4 in `main.py` | _to be decided_ | `feature/restaurant-logic`, `feature/cli-orders` |
-| `storage.py` (JSON) + novel feature lead | _to be decided_ | `feature/storage` |
-| Novel feature: **waiting list** | all (led by the `storage.py` owner) | `feature/waiting-list` |
+| `main.py` (CLI): skeleton, menu loop and all options | Jorge | `feature/cli-skeleton`, `feature/cli-helpers`, `feature/cli-status`, `feature/cli-options` |
+| `restaurant_logic.py` (logic) | Alejandro | `feature/restaurant-logic` |
+| `storage.py` (JSON) + test files in `tables/` | Gregorio | `feature/storage` |
+| Novel feature: **waiting list** (two functions in `restaurant_logic.py` + connecting it in `main.py`) | Gregorio, with Jorge for `main.py` | `feature/waiting-list` |
 
-`main.py` is the longest module, so the logic owner also writes options 3 and 4. To avoid
-merge conflicts, that is done **after** the `main.py` skeleton (menu loop + one empty
-function per option) has been merged, in a new branch created from the updated `main`.
+The `main.py` skeleton (menu loop + one empty function per option) is merged first, so
+everyone can try their functions from the menu. The waiting list is added once the basic
+program works from start to end.
 
 ---
 
