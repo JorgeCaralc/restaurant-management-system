@@ -24,7 +24,48 @@ def create_restaurant(data):
         "waiting_list": [],
     }
     return restaurant
+def seat_group(restaurant, customers):
+    """Seat a group of customers at a free table, if they fit.
 
+    A group fits if there are enough free seats (capacity) and a free table
+    (max_tables). The table gets the lowest number between 1 and max_tables
+    that no active table is using, like a real dining room.
+
+    Returns the table number, or None if the group does not fit.
+    """
+    if restaurant["occupancy"] + customers > restaurant["capacity"]:
+        return None
+    if len(restaurant["tables"]) >= restaurant["max_tables"]:
+        return None
+
+    used_numbers = []
+    for table in restaurant["tables"]:
+        used_numbers.append(table["table_num"])
+
+    table_num = 1
+    while table_num in used_numbers:
+        table_num += 1
+
+    restaurant["tables"].append({
+        "table_num": table_num,
+        "customers": customers,
+        "status": "seated",
+        "orders": [],
+    })
+    restaurant["occupancy"] += customers
+    return table_num
+
+def get_tables(restaurant, status):
+    """Return the active tables with the given status ("seated" or "ordered").
+
+    The list holds the same table dicts that are in the restaurant, not
+    copies, so a change made to one of them is also seen in the restaurant.
+    """
+    tables = []
+    for table in restaurant["tables"]:
+        if table["status"] == status:
+            tables.append(table)
+    return tables
 
 def _run_tests():
     """Check the functions of this module. Only runs with: python restaurant_logic.py"""
@@ -47,9 +88,54 @@ def _run_tests():
     assert restaurant["waiting_list"] == []
     other = create_restaurant(data)
     assert other["tables"] is not restaurant["tables"]
+    # seat_group: tables get numbers 1, 2, 3...
+    restaurant = create_restaurant(data)
+    assert seat_group(restaurant, 4) == 1
+    assert seat_group(restaurant, 2) == 2
+    assert restaurant["occupancy"] == 6
+    assert restaurant["tables"][0] == {"table_num": 1, "customers": 4, "status": "seated", "orders": []}
+
+    # seat_group: a group bigger than the free seats does not fit (6 + 45 > 50)
+    assert seat_group(restaurant, 45) is None
+    assert restaurant["occupancy"] == 6
+    assert len(restaurant["tables"]) == 2
+
+    # seat_group: fill the 5 tables; a 6th group does not fit even with free seats
+    assert seat_group(restaurant, 1) == 3
+    assert seat_group(restaurant, 1) == 4
+    assert seat_group(restaurant, 1) == 5
+    assert seat_group(restaurant, 1) is None
+
+    # seat_group: when table 2 is freed, the next group gets table 2, not 6
+    restaurant["tables"].pop(1)
+    restaurant["occupancy"] -= 2
+    assert seat_group(restaurant, 3) == 2
+
+    # seat_group: a group of exactly the capacity fits (<=, not <)
+    restaurant = create_restaurant(data)
+    assert seat_group(restaurant, 50) == 1
+
+    # get_tables: filters by status and keeps the restaurant's order
+    restaurant = create_restaurant(data)
+    seat_group(restaurant, 2)
+    seat_group(restaurant, 3)
+    seat_group(restaurant, 4)
+    restaurant["tables"][1]["status"] = "ordered"
+    seated = get_tables(restaurant, "seated")
+    ordered = get_tables(restaurant, "ordered")
+    assert len(seated) == 2
+    assert seated[0]["table_num"] == 1
+    assert seated[1]["table_num"] == 3
+    assert len(ordered) == 1
+    assert ordered[0]["table_num"] == 2
+
+    # get_tables: returns the same table dicts, not copies
+    assert ordered[0] is restaurant["tables"][1]
+
+    # get_tables: an empty restaurant has no tables in any state
+    assert get_tables(create_restaurant(data), "seated") == []
 
     print("All tests passed")
-
 
 if __name__ == "__main__":
     _run_tests()
