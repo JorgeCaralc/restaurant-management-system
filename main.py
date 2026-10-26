@@ -6,3 +6,77 @@ This is the ONLY module that talks to the user (print / input): it shows
 the menu, reads and validates what the user types, and calls the functions
 in restaurant_logic.py and storage.py.
 """
+
+def show_menu():
+    """Print the main menu options."""
+    print("===== Restaurant Management System =====")
+    print("1. Load restaurant")
+    print("2. Load new group requests")
+    print("3. Take an order")
+    print("4. Charge and release a table")
+    print("5. Grow the menu")
+    print("6. Check status")
+    print("7. Exit")
+
+
+def load_restaurant_option(restaurant, restaurant_path):
+    """Load the restaurant from a JSON file (option 1)."""
+    print("This option is not implemented yet.")
+    return restaurant, restaurant_path
+
+
+def load_groups_option(restaurant):
+    """Load group requests from a file in tables/ and seat them (option 2)."""
+    print("This option is not implemented yet.")
+
+
+def take_order_option(restaurant):
+    """Take the order of a seated table (option 3)."""
+    print("This option is not implemented yet.")
+
+
+def charge_table_option(restaurant):
+    """Charge an ordered table and release it (option 4)."""
+    print("This option is not implemented yet.")
+
+
+def grow_menu_option(restaurant, restaurant_path):
+    """Add a dish or update its price, and save the menu (option 5)."""
+    print("This option is not implemented yet.")
+
+
+def show_status(restaurant):
+    """Show all the data the program holds (option 6)."""
+    print("This option is not implemented yet.")
+
+
+def main():
+    """Run the main menu loop until the user chooses to exit."""
+    restaurant = None   # no restaurant loaded yet
+    restaurant_path = "data/restaurant.json"
+    while True:
+        show_menu()
+        option = input("Choose an option (1-7): ").strip()
+        if option == "1":
+            restaurant, restaurant_path = load_restaurant_option(restaurant, restaurant_path)
+        elif option in ("2", "3", "4", "5", "6") and restaurant is None:
+            print("Load the restaurant first (option 1).")
+        elif option == "2":
+            load_groups_option(restaurant)
+        elif option == "3":
+            take_order_option(restaurant)
+        elif option == "4":
+            charge_table_option(restaurant)
+        elif option == "5":
+            grow_menu_option(restaurant, restaurant_path)
+        elif option == "6":
+            show_status(restaurant)
+        elif option == "7":
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid option.")
+
+
+if __name__ == "__main__":
+    main()
