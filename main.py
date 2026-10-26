@@ -6,6 +6,8 @@ This is the ONLY module that talks to the user (print / input): it shows
 the menu, reads and validates what the user types, and calls the functions
 in restaurant_logic.py and storage.py.
 """
+import math
+
 
 def show_menu():
     """Print the main menu options."""
@@ -17,6 +19,18 @@ def show_menu():
     print("5. Grow the menu")
     print("6. Check status")
     print("7. Exit")
+
+
+def ask_number(prompt):
+    """Ask for a number greater than 0 until the user types a valid one."""
+    while True:
+        try:
+            number = float(input(prompt))
+            if number > 0 and math.isfinite(number):
+                return number
+            print("The number must be greater than 0.")
+        except ValueError:
+            print("That is not a number. Try again, e.g. 12.5")
 
 
 def load_restaurant_option(restaurant, restaurant_path):
