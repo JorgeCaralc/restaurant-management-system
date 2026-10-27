@@ -47,6 +47,15 @@ def choose_table(tables):
         print("That table is not in the list.")
 
 
+def ask_yes_no(prompt):
+    """Ask a yes/no question. Return True only if the user types y (Enter means no)."""
+    answer = input(prompt + " (y/n): ").strip().lower()
+    if answer == "y":
+        return True
+    else:
+        return False
+
+
 def load_restaurant_option(restaurant, restaurant_path):
     """Load the restaurant from a JSON file (option 1)."""
     print("This option is not implemented yet.")
