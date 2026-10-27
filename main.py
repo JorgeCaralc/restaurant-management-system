@@ -119,7 +119,21 @@ def charge_table_option(restaurant):
 
 def grow_menu_option(restaurant, restaurant_path):
     """Add a dish or update its price, and save the menu (option 5)."""
-    print("This option is not implemented yet.")
+    name = input("Dish name: ").strip()
+    if name == "":
+        print("The dish name cannot be empty.")
+        return
+    existing = restaurant_logic.find_dish(restaurant["menu"], name)
+    if existing is not None:
+        print(f"{existing} is already on the menu. Its price will be updated.")
+    price = ask_number("Price: ")
+    restaurant_logic.add_or_update_dish(restaurant["menu"], name, price)
+    try:
+        storage.save_restaurant_data(restaurant_path, restaurant)
+        print("Menu saved.")
+    except (OSError, ValueError) as error:
+        print(f"The menu could not be saved: {error}")
+        print("The change is kept for tonight and will be saved again on exit.")
 
 
 def show_status(restaurant):
@@ -140,6 +154,22 @@ def show_status(restaurant):
     for dish, price in restaurant["menu"].items():
         print(f"  - {dish}: {price:.2f}")
     print(f"Earnings tonight: {restaurant['earnings']:.2f}")
+
+
+def exit_option(restaurant, restaurant_path):
+    """Save the menu before closing (option 7). Return True to close, False to stay."""
+    if restaurant is None:
+        return True
+    if restaurant["tables"] or restaurant["waiting_list"]:
+        if not ask_yes_no("There are tables or groups still in the restaurant. Exit anyway?"):
+            return False
+    try:
+        storage.save_restaurant_data(restaurant_path, restaurant)
+        print("Menu saved.")
+    except (OSError, ValueError) as error:
+        print(f"The menu could not be saved: {error}")
+    return True
+
 
 def main():
     """Run the main menu loop until the user chooses to exit."""
@@ -163,8 +193,9 @@ def main():
         elif option == "6":
             show_status(restaurant)
         elif option == "7":
-            print("Goodbye!")
-            break
+            if exit_option(restaurant, restaurant_path):
+                print("Goodbye!")
+                break
         else:
             print("Invalid option.")
 
