@@ -7,7 +7,7 @@ input(): if something is wrong it raises an exception, and main.py
 catches it and tells the user.
 """
 import json
-
+import os
 
 def load_groups(path):
     """Read a group requests file and return the group sizes, e.g. [4, 2, 6].
@@ -30,14 +30,26 @@ def load_groups(path):
         if "customers" not in group:
             raise ValueError(f'Group {number}: the "customers" key is missing.')
         customers = group["customers"]
-        if type(customers) is not int or customers <= 0:
+        if type(customers) != int or customers <= 0:
             raise ValueError(f'Group {number}: "customers" must be a whole number greater than 0.')
         groups.append(customers)
     return groups
 
 
+def list_group_files(folder):
+    """Return the sorted names of the .json files in folder, e.g. ["groups_2.json"].
+
+    FileNotFoundError is not caught here if the folder does not exist.
+    """
+    files = []
+    for name in os.listdir(folder):
+        if name[-5:] == ".json":
+            files.append(name)
+    return sorted(files)
+
+
 def _run_tests():
-    """Check load_groups with the test files in tables/. No output means all passed."""
+    """Check the storage functions with the test files in tables/. No output means all passed."""
     # A valid file returns the list of group sizes
     assert load_groups("tables/groups_2.json") == [4, 2, 6, 3, 5, 2, 8]
 
@@ -62,6 +74,21 @@ def _run_tests():
     except FileNotFoundError:
         pass
 
+    # list_group_files returns only .json names, sorted
+    files = list_group_files("tables")
+    assert "groups_2.json" in files
+    assert files == sorted(files)
+    for name in files:
+        assert name[-5:] == ".json"
+
+    # A folder that does not exist is not caught here
+    try:
+        list_group_files("folder_that_does_not_exist")
+        assert False, "a missing folder should raise FileNotFoundError"
+    except FileNotFoundError:
+        pass
+
 
 if __name__ == "__main__":
     _run_tests()
+
