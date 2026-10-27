@@ -67,6 +67,51 @@ def get_tables(restaurant, status):
             tables.append(table)
     return tables
 
+def _clean_name(name):
+    """Return the name without extra spaces: none at the start or the end,
+    and only one between words ("  Cocido   madrileño " -> "Cocido madrileño")."""
+    return " ".join(name.split())
+
+
+def find_dish(menu, name):
+    """Find a dish in the menu without caring about capitals or extra spaces.
+
+    Returns the dish name exactly as it is written in the menu
+    ("cocido madrileño" -> "Cocido madrileño"), or None if it is not on
+    the menu. An empty name is never found.
+    """
+    wanted = _clean_name(name).lower()
+    if wanted == "":
+        return None
+    for dish in menu:
+        if _clean_name(dish).lower() == wanted:
+            return dish
+    return None
+
+def register_order(table, dishes, menu):
+    """Save the dishes ordered by a table and mark it as "ordered".
+
+    dishes holds exact menu names (main.py checks each one with find_dish).
+    Each dish is saved with its price at this moment, so if the price changes
+    later in the menu, the table still pays what the dish cost when ordered.
+    """
+    orders = []
+    for dish in dishes:
+        orders.append({"dish": dish, "price": menu[dish]})
+    table["orders"] = orders
+    table["status"] = "ordered"
+
+def calculate_bill(table):
+    """Return the total to pay for a table, rounded to 2 decimals.
+
+    Adds up the prices saved in its orders (the prices when ordered,
+    not the current menu prices). It does not change the table.
+    """
+    total = 0
+    for order in table["orders"]:
+        total += order["price"]
+    return round(total, 2)
+
 def _run_tests():
     """Check the functions of this module. Only runs with: python restaurant_logic.py"""
     data = {
@@ -134,6 +179,60 @@ def _run_tests():
 
     # get_tables: an empty restaurant has no tables in any state
     assert get_tables(create_restaurant(data), "seated") == []
+
+    # find_dish: ignores capitals and extra spaces, returns the exact menu name
+    menu = data["menu"]
+    assert find_dish(menu, "Cocido madrileño") == "Cocido madrileño"
+    assert find_dish(menu, "COCIDO madrileño") == "Cocido madrileño"
+    assert find_dish(menu, "  cocido   MADRILEÑO  ") == "Cocido madrileño"
+
+    # find_dish: a dish that is not on the menu, or an empty name, gives None
+    assert find_dish(menu, "Paella") is None
+    assert find_dish(menu, "Cocido") is None
+    assert find_dish(menu, "") is None
+    assert find_dish(menu, "   ") is None
+    assert find_dish({}, "Cocido madrileño") is None
+
+    # register_order: saves each dish with its current price and marks the table as ordered
+    restaurant = create_restaurant(data)
+    seat_group(restaurant, 2)
+    table = restaurant["tables"][0]
+    register_order(table, ["Cocido madrileño", "Bocata de calamares", "Cocido madrileño"], restaurant["menu"])
+    assert table["status"] == "ordered"
+    assert table["orders"] == [
+        {"dish": "Cocido madrileño", "price": 20},
+        {"dish": "Bocata de calamares", "price": 5},
+        {"dish": "Cocido madrileño", "price": 20},
+    ]
+
+    # register_order: the restaurant sees the change (same table dict, not a copy)
+    assert get_tables(restaurant, "ordered") == [table]
+    assert get_tables(restaurant, "seated") == []
+
+    # register_order: if the price changes later in the menu, the saved price stays the same
+    menu = dict(data["menu"])
+    table = {"table_num": 1, "customers": 1, "status": "seated", "orders": []}
+    register_order(table, ["Cocido madrileño"], menu)
+    menu["Cocido madrileño"] = 25
+    assert table["orders"][0]["price"] == 20
+
+     # calculate_bill: adds the saved prices (20 + 5 + 20 = 45) and does not change the table
+    restaurant = create_restaurant(data)
+    seat_group(restaurant, 2)
+    table = restaurant["tables"][0]
+    register_order(table, ["Cocido madrileño", "Bocata de calamares", "Cocido madrileño"], restaurant["menu"])
+    assert calculate_bill(table) == 45
+    assert "bill" not in table
+    assert table["status"] == "ordered"
+
+    # calculate_bill: rounds to 2 decimals (in Python, 0.1 + 0.2 gives 0.30000000000000004)
+    table = {"table_num": 1, "customers": 2, "status": "ordered",
+             "orders": [{"dish": "Caña", "price": 0.1}, {"dish": "Agua", "price": 0.2}]}
+    assert calculate_bill(table) == 0.3
+
+    # calculate_bill: a table with no orders costs 0
+    table = {"table_num": 1, "customers": 1, "status": "seated", "orders": []}
+    assert calculate_bill(table) == 0
 
     print("All tests passed")
 
