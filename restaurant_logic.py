@@ -138,6 +138,24 @@ def charge_and_release(restaurant, table_num):
     return bill
 
 
+def add_or_update_dish(menu, name, price):
+    """Add a new dish to the menu, or change the price of a dish it already has.
+
+    If the dish is already on the menu, even written with other capitals or
+    extra spaces, its price is updated and its name stays as in the menu.
+    If it is new, it is added without extra spaces.
+    The name must not be empty and the price must be > 0 (main.py checks both).
+
+    Returns True if the dish already existed (updated), False if it is new.
+    """
+    existing = find_dish(menu, name)
+    if existing is not None:
+        menu[existing] = price
+        return True
+    menu[_clean_name(name)] = price
+    return False
+
+
 def _run_tests():
     """Check the functions of this module. Only runs with: python restaurant_logic.py"""
     data = {
@@ -285,6 +303,18 @@ def _run_tests():
     assert charge_and_release(restaurant, 2) == 12
     assert restaurant["earnings"] == 37
 
+    # add_or_update_dish: a new dish is added without extra spaces and gives False
+    menu = dict(data["menu"])
+    assert add_or_update_dish(menu, "  Tortilla   de patatas ", 8) is False
+    assert menu["Tortilla de patatas"] == 8
+    assert len(menu) == 4
+
+    # add_or_update_dish: an existing dish (other capitals) keeps its menu name, gets the new price, gives True
+    assert add_or_update_dish(menu, "COCIDO madrileño", 25) is True
+    assert menu["Cocido madrileño"] == 25
+    assert "COCIDO madrileño" not in menu
+    assert len(menu) == 4
+    
     print("All tests passed")
 
 if __name__ == "__main__":
