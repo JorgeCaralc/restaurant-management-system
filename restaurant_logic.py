@@ -67,6 +67,27 @@ def get_tables(restaurant, status):
             tables.append(table)
     return tables
 
+def _clean_name(name):
+    """Return the name without extra spaces: none at the start or the end,
+    and only one between words ("  Cocido   madrileño " -> "Cocido madrileño")."""
+    return " ".join(name.split())
+
+
+def find_dish(menu, name):
+    """Find a dish in the menu without caring about capitals or extra spaces.
+
+    Returns the dish name exactly as it is written in the menu
+    ("cocido madrileño" -> "Cocido madrileño"), or None if it is not on
+    the menu. An empty name is never found.
+    """
+    wanted = _clean_name(name).lower()
+    if wanted == "":
+        return None
+    for dish in menu:
+        if _clean_name(dish).lower() == wanted:
+            return dish
+    return None
+
 def _run_tests():
     """Check the functions of this module. Only runs with: python restaurant_logic.py"""
     data = {
@@ -134,6 +155,19 @@ def _run_tests():
 
     # get_tables: an empty restaurant has no tables in any state
     assert get_tables(create_restaurant(data), "seated") == []
+
+    # find_dish: ignores capitals and extra spaces, returns the exact menu name
+    menu = data["menu"]
+    assert find_dish(menu, "Cocido madrileño") == "Cocido madrileño"
+    assert find_dish(menu, "COCIDO madrileño") == "Cocido madrileño"
+    assert find_dish(menu, "  cocido   MADRILEÑO  ") == "Cocido madrileño"
+
+    # find_dish: a dish that is not on the menu, or an empty name, gives None
+    assert find_dish(menu, "Paella") is None
+    assert find_dish(menu, "Cocido") is None
+    assert find_dish(menu, "") is None
+    assert find_dish(menu, "   ") is None
+    assert find_dish({}, "Cocido madrileño") is None
 
     print("All tests passed")
 
