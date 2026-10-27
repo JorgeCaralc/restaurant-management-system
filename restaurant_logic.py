@@ -112,6 +112,32 @@ def calculate_bill(table):
         total += order["price"]
     return round(total, 2)
 
+
+def charge_and_release(restaurant, table_num):
+    """Charge a table and free it, so another group can use it.
+
+    Adds the bill to the evening's earnings, takes its customers out of
+    the occupancy and removes the table from the restaurant.
+
+    Returns the bill, or None if there is no active table with that number
+    or it has not ordered yet (in that case nothing changes).
+    """
+    table = None
+    for active_table in restaurant["tables"]:
+        if active_table["table_num"] == table_num:
+            table = active_table
+    if table is None:
+        return None
+    if table["status"] != "ordered":
+        return None
+
+    bill = calculate_bill(table)
+    restaurant["earnings"] = round(restaurant["earnings"] + bill, 2)
+    restaurant["occupancy"] -= table["customers"]
+    restaurant["tables"].remove(table)
+    return bill
+
+
 def _run_tests():
     """Check the functions of this module. Only runs with: python restaurant_logic.py"""
     data = {
@@ -233,6 +259,31 @@ def _run_tests():
     # calculate_bill: a table with no orders costs 0
     table = {"table_num": 1, "customers": 1, "status": "seated", "orders": []}
     assert calculate_bill(table) == 0
+
+    # charge_and_release: charges an ordered table, frees it and updates the evening's numbers
+    restaurant = create_restaurant(data)
+    seat_group(restaurant, 4)
+    seat_group(restaurant, 2)
+    register_order(restaurant["tables"][1], ["Cocido madrileño", "Bocata de calamares"], restaurant["menu"])
+    assert charge_and_release(restaurant, 2) == 25
+    assert restaurant["earnings"] == 25
+    assert restaurant["occupancy"] == 4
+    assert len(restaurant["tables"]) == 1
+    assert restaurant["tables"][0]["table_num"] == 1
+
+    # charge_and_release: a table that has not ordered, or does not exist, gives None and nothing changes
+    assert charge_and_release(restaurant, 1) is None
+    assert charge_and_release(restaurant, 2) is None
+    assert charge_and_release(restaurant, 9) is None
+    assert restaurant["earnings"] == 25
+    assert restaurant["occupancy"] == 4
+    assert len(restaurant["tables"]) == 1
+
+    # charge_and_release: earnings add up during the evening and the freed table number is used again
+    assert seat_group(restaurant, 3) == 2
+    register_order(restaurant["tables"][1], ["Callos a la madrileña"], restaurant["menu"])
+    assert charge_and_release(restaurant, 2) == 12
+    assert restaurant["earnings"] == 37
 
     print("All tests passed")
 
