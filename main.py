@@ -7,6 +7,8 @@ the menu, reads and validates what the user types, and calls the functions
 in restaurant_logic.py and storage.py.
 """
 import math
+import restaurant_logic
+import storage
 
 
 def show_menu():
@@ -69,7 +71,35 @@ def load_groups_option(restaurant):
 
 def take_order_option(restaurant):
     """Take the order of a seated table (option 3)."""
-    print("This option is not implemented yet.")
+    seated = restaurant_logic.get_tables(restaurant, "seated")
+    if not seated:
+        print("There are no seated tables waiting to order.")
+        return
+    if not restaurant["menu"]:
+        print("The menu is empty. Add dishes first (option 5).")
+        return
+    table = choose_table(seated)
+    if table is None:
+        return
+    dishes = []
+    for customer in range(1, table["customers"] + 1):
+        print(f"Customer {customer} (press Enter when finished):")
+        customer_dishes = 0
+        while True:
+            name = input("  Dish: ").strip()
+            if name == "":
+                if customer_dishes > 0:
+                    break
+                print("  Each customer must order at least one dish.")
+            else:
+                dish = restaurant_logic.find_dish(restaurant["menu"], name)
+                if dish is None:
+                    print(f'  "{name}" is not on the menu.')
+                else:
+                    dishes.append(dish)
+                    customer_dishes += 1
+    restaurant_logic.register_order(table, dishes, restaurant["menu"])
+    print(f"Order saved for table {table['table_num']}: {len(dishes)} dishes.")
 
 
 def charge_table_option(restaurant):
