@@ -33,6 +33,20 @@ def ask_number(prompt):
             print("That is not a number. Try again, e.g. 12.5")
 
 
+def choose_table(tables):
+    """Show the tables and return the one the user picks, or None to cancel."""
+    for table in tables:
+        print(f"Table {table['table_num']}: {table['customers']} customers ({table['status']})")
+    while True:
+        answer = input("Table number (Enter to cancel): ").strip()
+        if answer == "":
+            return None
+        for table in tables:
+            if str(table["table_num"]) == answer:
+                return table
+        print("That table is not in the list.")
+
+
 def load_restaurant_option(restaurant, restaurant_path):
     """Load the restaurant from a JSON file (option 1)."""
     print("This option is not implemented yet.")
