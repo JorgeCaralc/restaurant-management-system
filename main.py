@@ -58,6 +58,11 @@ def show_status(restaurant):
             print(f"  Table {table['table_num']}: {table['customers']} customers, {table['status']}")
             for order in table["orders"]:
                 print(f"      - {order['dish']}: {order['price']:.2f}")
+    print(f"Waiting list: {restaurant['waiting_list']}")
+    print("Menu:")
+    for dish, price in restaurant["menu"].items():
+        print(f"  - {dish}: {price:.2f}")
+    print(f"Earnings tonight: {restaurant['earnings']:.2f}")
 
 def main():
     """Run the main menu loop until the user chooses to exit."""
