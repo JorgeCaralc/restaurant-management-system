@@ -104,7 +104,17 @@ def take_order_option(restaurant):
 
 def charge_table_option(restaurant):
     """Charge an ordered table and release it (option 4)."""
-    print("This option is not implemented yet.")
+    ordered = restaurant_logic.get_tables(restaurant, "ordered")
+    if not ordered:
+        print("There are no tables waiting to pay.")
+        return
+    table = choose_table(ordered)
+    if table is None:
+        return
+    for order in table["orders"]:
+        print(f"  - {order['dish']}: {order['price']:.2f}")
+    bill = restaurant_logic.charge_and_release(restaurant, table["table_num"])
+    print(f"Table {table['table_num']} paid {bill:.2f}. The table is free now.")
 
 
 def grow_menu_option(restaurant, restaurant_path):
