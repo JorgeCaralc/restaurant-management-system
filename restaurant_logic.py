@@ -88,6 +88,19 @@ def find_dish(menu, name):
             return dish
     return None
 
+def register_order(table, dishes, menu):
+    """Save the dishes ordered by a table and mark it as "ordered".
+
+    dishes holds exact menu names (main.py checks each one with find_dish).
+    Each dish is saved with its price at this moment, so if the price changes
+    later in the menu, the table still pays what the dish cost when ordered.
+    """
+    orders = []
+    for dish in dishes:
+        orders.append({"dish": dish, "price": menu[dish]})
+    table["orders"] = orders
+    table["status"] = "ordered"
+
 def _run_tests():
     """Check the functions of this module. Only runs with: python restaurant_logic.py"""
     data = {
@@ -168,6 +181,29 @@ def _run_tests():
     assert find_dish(menu, "") is None
     assert find_dish(menu, "   ") is None
     assert find_dish({}, "Cocido madrileño") is None
+
+    # register_order: saves each dish with its current price and marks the table as ordered
+    restaurant = create_restaurant(data)
+    seat_group(restaurant, 2)
+    table = restaurant["tables"][0]
+    register_order(table, ["Cocido madrileño", "Bocata de calamares", "Cocido madrileño"], restaurant["menu"])
+    assert table["status"] == "ordered"
+    assert table["orders"] == [
+        {"dish": "Cocido madrileño", "price": 20},
+        {"dish": "Bocata de calamares", "price": 5},
+        {"dish": "Cocido madrileño", "price": 20},
+    ]
+
+    # register_order: the restaurant sees the change (same table dict, not a copy)
+    assert get_tables(restaurant, "ordered") == [table]
+    assert get_tables(restaurant, "seated") == []
+
+    # register_order: if the price changes later in the menu, the saved price stays the same
+    menu = dict(data["menu"])
+    table = {"table_num": 1, "customers": 1, "status": "seated", "orders": []}
+    register_order(table, ["Cocido madrileño"], menu)
+    menu["Cocido madrileño"] = 25
+    assert table["orders"][0]["price"] == 20
 
     print("All tests passed")
 
