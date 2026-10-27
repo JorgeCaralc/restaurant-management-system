@@ -84,8 +84,22 @@ def grow_menu_option(restaurant, restaurant_path):
 
 def show_status(restaurant):
     """Show all the data the program holds (option 6)."""
-    print("This option is not implemented yet.")
-
+    print(f"===== {restaurant['name']} =====")
+    print(f"Capacity: {restaurant['capacity']} people | Max tables: {restaurant['max_tables']}")
+    print(f"Occupancy: {restaurant['occupancy']} people ({restaurant['capacity'] - restaurant['occupancy']} free seats)")
+    print(f"Tables in use: {len(restaurant['tables'])} of {restaurant['max_tables']}")
+    if not restaurant["tables"]:
+        print("  No active tables.")
+    else:
+        for table in restaurant["tables"]:
+            print(f"  Table {table['table_num']}: {table['customers']} customers, {table['status']}")
+            for order in table["orders"]:
+                print(f"      - {order['dish']}: {order['price']:.2f}")
+    print(f"Waiting list: {restaurant['waiting_list']}")
+    print("Menu:")
+    for dish, price in restaurant["menu"].items():
+        print(f"  - {dish}: {price:.2f}")
+    print(f"Earnings tonight: {restaurant['earnings']:.2f}")
 
 def main():
     """Run the main menu loop until the user chooses to exit."""
