@@ -101,6 +101,17 @@ def register_order(table, dishes, menu):
     table["orders"] = orders
     table["status"] = "ordered"
 
+def calculate_bill(table):
+    """Return the total to pay for a table, rounded to 2 decimals.
+
+    Adds up the prices saved in its orders (the prices when ordered,
+    not the current menu prices). It does not change the table.
+    """
+    total = 0
+    for order in table["orders"]:
+        total += order["price"]
+    return round(total, 2)
+
 def _run_tests():
     """Check the functions of this module. Only runs with: python restaurant_logic.py"""
     data = {
@@ -204,6 +215,24 @@ def _run_tests():
     register_order(table, ["Cocido madrileño"], menu)
     menu["Cocido madrileño"] = 25
     assert table["orders"][0]["price"] == 20
+
+     # calculate_bill: adds the saved prices (20 + 5 + 20 = 45) and does not change the table
+    restaurant = create_restaurant(data)
+    seat_group(restaurant, 2)
+    table = restaurant["tables"][0]
+    register_order(table, ["Cocido madrileño", "Bocata de calamares", "Cocido madrileño"], restaurant["menu"])
+    assert calculate_bill(table) == 45
+    assert "bill" not in table
+    assert table["status"] == "ordered"
+
+    # calculate_bill: rounds to 2 decimals (in Python, 0.1 + 0.2 gives 0.30000000000000004)
+    table = {"table_num": 1, "customers": 2, "status": "ordered",
+             "orders": [{"dish": "Caña", "price": 0.1}, {"dish": "Agua", "price": 0.2}]}
+    assert calculate_bill(table) == 0.3
+
+    # calculate_bill: a table with no orders costs 0
+    table = {"table_num": 1, "customers": 1, "status": "seated", "orders": []}
+    assert calculate_bill(table) == 0
 
     print("All tests passed")
 
