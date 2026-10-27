@@ -112,6 +112,50 @@ def calculate_bill(table):
         total += order["price"]
     return round(total, 2)
 
+
+def charge_and_release(restaurant, table_num):
+    """Charge a table and free it, so another group can use it.
+
+    Adds the bill to the evening's earnings, takes its customers out of
+    the occupancy and removes the table from the restaurant.
+
+    Returns the bill, or None if there is no active table with that number
+    or it has not ordered yet (in that case nothing changes).
+    """
+    table = None
+    for active_table in restaurant["tables"]:
+        if active_table["table_num"] == table_num:
+            table = active_table
+    if table is None:
+        return None
+    if table["status"] != "ordered":
+        return None
+
+    bill = calculate_bill(table)
+    restaurant["earnings"] = round(restaurant["earnings"] + bill, 2)
+    restaurant["occupancy"] -= table["customers"]
+    restaurant["tables"].remove(table)
+    return bill
+
+
+def add_or_update_dish(menu, name, price):
+    """Add a new dish to the menu, or change the price of a dish it already has.
+
+    If the dish is already on the menu, even written with other capitals or
+    extra spaces, its price is updated and its name stays as in the menu.
+    If it is new, it is added without extra spaces.
+    The name must not be empty and the price must be > 0 (main.py checks both).
+
+    Returns True if the dish already existed (updated), False if it is new.
+    """
+    existing = find_dish(menu, name)
+    if existing is not None:
+        menu[existing] = price
+        return True
+    menu[_clean_name(name)] = price
+    return False
+
+
 def _run_tests():
     """Check the functions of this module. Only runs with: python restaurant_logic.py"""
     data = {
@@ -234,6 +278,43 @@ def _run_tests():
     table = {"table_num": 1, "customers": 1, "status": "seated", "orders": []}
     assert calculate_bill(table) == 0
 
+    # charge_and_release: charges an ordered table, frees it and updates the evening's numbers
+    restaurant = create_restaurant(data)
+    seat_group(restaurant, 4)
+    seat_group(restaurant, 2)
+    register_order(restaurant["tables"][1], ["Cocido madrileño", "Bocata de calamares"], restaurant["menu"])
+    assert charge_and_release(restaurant, 2) == 25
+    assert restaurant["earnings"] == 25
+    assert restaurant["occupancy"] == 4
+    assert len(restaurant["tables"]) == 1
+    assert restaurant["tables"][0]["table_num"] == 1
+
+    # charge_and_release: a table that has not ordered, or does not exist, gives None and nothing changes
+    assert charge_and_release(restaurant, 1) is None
+    assert charge_and_release(restaurant, 2) is None
+    assert charge_and_release(restaurant, 9) is None
+    assert restaurant["earnings"] == 25
+    assert restaurant["occupancy"] == 4
+    assert len(restaurant["tables"]) == 1
+
+    # charge_and_release: earnings add up during the evening and the freed table number is used again
+    assert seat_group(restaurant, 3) == 2
+    register_order(restaurant["tables"][1], ["Callos a la madrileña"], restaurant["menu"])
+    assert charge_and_release(restaurant, 2) == 12
+    assert restaurant["earnings"] == 37
+
+    # add_or_update_dish: a new dish is added without extra spaces and gives False
+    menu = dict(data["menu"])
+    assert add_or_update_dish(menu, "  Tortilla   de patatas ", 8) is False
+    assert menu["Tortilla de patatas"] == 8
+    assert len(menu) == 4
+
+    # add_or_update_dish: an existing dish (other capitals) keeps its menu name, gets the new price, gives True
+    assert add_or_update_dish(menu, "COCIDO madrileño", 25) is True
+    assert menu["Cocido madrileño"] == 25
+    assert "COCIDO madrileño" not in menu
+    assert len(menu) == 4
+    
     print("All tests passed")
 
 if __name__ == "__main__":
