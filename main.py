@@ -84,7 +84,7 @@ def load_groups_option(restaurant):
     except OSError as error:
         print(f"Could not open the tables folder: {error}")
         return
-    if not files:
+    if len(files) == 0:
         print("There are no group files in tables/.")
         return
     number = 0
@@ -108,7 +108,7 @@ def load_groups_option(restaurant):
     except (OSError, ValueError) as error:
         print(f"Could not load the groups: {error}")
         return
-    if not groups:
+    if len(groups) == 0:
         print("The file has no groups.")
         return
     rejected = restaurant_logic.add_to_waiting_list(restaurant, groups)
@@ -117,7 +117,7 @@ def load_groups_option(restaurant):
     seated = restaurant_logic.seat_waiting_groups(restaurant)
     for customers, table_num in seated:
         print(f"Group of {customers} -> table {table_num}")
-    if restaurant["waiting_list"]:
+    if len(restaurant["waiting_list"]) > 0:
         print(f"Waiting for a table: {restaurant['waiting_list']}")
     else:
         print("Nobody is waiting.")
@@ -126,10 +126,10 @@ def load_groups_option(restaurant):
 def take_order_option(restaurant):
     """Take the order of a seated table (option 3)."""
     seated = restaurant_logic.get_tables(restaurant, "seated")
-    if not seated:
+    if len(seated) == 0:
         print("There are no seated tables waiting to order.")
         return
-    if not restaurant["menu"]:
+    if len(restaurant["menu"]) == 0:
         print("The menu is empty. Add dishes first (option 5).")
         return
     table = choose_table(seated)
@@ -159,7 +159,7 @@ def take_order_option(restaurant):
 def charge_table_option(restaurant):
     """Charge an ordered table and release it (option 4)."""
     ordered = restaurant_logic.get_tables(restaurant, "ordered")
-    if not ordered:
+    if len(ordered) == 0:
         print("There are no tables waiting to pay.")
         return
     table = choose_table(ordered)
@@ -199,7 +199,7 @@ def show_status(restaurant):
     print(f"Capacity: {restaurant['capacity']} people | Max tables: {restaurant['max_tables']}")
     print(f"Occupancy: {restaurant['occupancy']} people ({restaurant['capacity'] - restaurant['occupancy']} free seats)")
     print(f"Tables in use: {len(restaurant['tables'])} of {restaurant['max_tables']}")
-    if not restaurant["tables"]:
+    if len(restaurant["tables"]) == 0:
         print("  No active tables.")
     else:
         for table in restaurant["tables"]:
@@ -217,7 +217,7 @@ def exit_option(restaurant, restaurant_path):
     """Save the menu before closing (option 7). Return True to close, False to stay."""
     if restaurant is None:
         return True
-    if restaurant["tables"] or restaurant["waiting_list"]:
+    if len(restaurant["tables"]) > 0 or len(restaurant["waiting_list"]) > 0:
         if not ask_yes_no("There are tables or groups still in the restaurant. Exit anyway?"):
             return False
     try:
