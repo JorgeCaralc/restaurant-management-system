@@ -7,10 +7,13 @@ the menu, reads and validates what the user types, and calls the functions
 in restaurant_logic.py and storage.py.
 """
 import math
+import restaurant_logic
+import storage
 
 
 def show_menu():
     """Print the main menu options."""
+    print()
     print("===== Restaurant Management System =====")
     print("1. Load restaurant")
     print("2. Load new group requests")
@@ -58,28 +61,129 @@ def ask_yes_no(prompt):
 
 def load_restaurant_option(restaurant, restaurant_path):
     """Load the restaurant from a JSON file (option 1)."""
-    print("This option is not implemented yet.")
-    return restaurant, restaurant_path
+    if restaurant is not None:
+        if not ask_yes_no("A restaurant is already loaded and tonight's data will be lost. Continue?"):
+            return restaurant, restaurant_path
+    path = input(f"Restaurant file (Enter = {restaurant_path}): ").strip()
+    if path == "":
+        path = restaurant_path
+    try:
+        data = storage.load_restaurant_data(path)
+    except (OSError, ValueError) as error:
+        print(f"Could not load the restaurant: {error}")
+        return restaurant, restaurant_path
+    new_restaurant = restaurant_logic.create_restaurant(data)
+    print(f"Restaurant {new_restaurant['name']} loaded.")
+    return new_restaurant, path
 
 
 def load_groups_option(restaurant):
     """Load group requests from a file in tables/ and seat them (option 2)."""
-    print("This option is not implemented yet.")
+    try:
+        files = storage.list_group_files("tables")
+    except OSError as error:
+        print(f"Could not open the tables folder: {error}")
+        return
+    if not files:
+        print("There are no group files in tables/.")
+        return
+    number = 0
+    for name in files:
+        number += 1
+        print(f"{number}. {name}")
+    answer = input("File number (Enter to cancel): ").strip()
+    if answer == "":
+        return
+    chosen = None
+    number = 0
+    for name in files:
+        number += 1
+        if str(number) == answer:
+            chosen = name
+    if chosen is None:
+        print("That file is not in the list.")
+        return
+    try:
+        groups = storage.load_groups("tables/" + chosen)
+    except (OSError, ValueError) as error:
+        print(f"Could not load the groups: {error}")
+        return
+    if not groups:
+        print("The file has no groups.")
+        return
+    for customers in groups:
+        table_num = restaurant_logic.seat_group(restaurant, customers)
+        if table_num is None:
+            print(f"Group of {customers}: no room right now.")
+        else:
+            print(f"Group of {customers} -> table {table_num}")
 
 
 def take_order_option(restaurant):
     """Take the order of a seated table (option 3)."""
-    print("This option is not implemented yet.")
+    seated = restaurant_logic.get_tables(restaurant, "seated")
+    if not seated:
+        print("There are no seated tables waiting to order.")
+        return
+    if not restaurant["menu"]:
+        print("The menu is empty. Add dishes first (option 5).")
+        return
+    table = choose_table(seated)
+    if table is None:
+        return
+    dishes = []
+    for customer in range(1, table["customers"] + 1):
+        print(f"Customer {customer} (press Enter when finished):")
+        customer_dishes = 0
+        while True:
+            name = input("  Dish: ").strip()
+            if name == "":
+                if customer_dishes > 0:
+                    break
+                print("  Each customer must order at least one dish.")
+            else:
+                dish = restaurant_logic.find_dish(restaurant["menu"], name)
+                if dish is None:
+                    print(f'  "{name}" is not on the menu.')
+                else:
+                    dishes.append(dish)
+                    customer_dishes += 1
+    restaurant_logic.register_order(table, dishes, restaurant["menu"])
+    print(f"Order saved for table {table['table_num']}: {len(dishes)} dishes.")
 
 
 def charge_table_option(restaurant):
     """Charge an ordered table and release it (option 4)."""
-    print("This option is not implemented yet.")
+    ordered = restaurant_logic.get_tables(restaurant, "ordered")
+    if not ordered:
+        print("There are no tables waiting to pay.")
+        return
+    table = choose_table(ordered)
+    if table is None:
+        return
+    for order in table["orders"]:
+        print(f"  - {order['dish']}: {order['price']:.2f}")
+    bill = restaurant_logic.charge_and_release(restaurant, table["table_num"])
+    print(f"Table {table['table_num']} paid {bill:.2f}. The table is free now.")
 
 
 def grow_menu_option(restaurant, restaurant_path):
     """Add a dish or update its price, and save the menu (option 5)."""
-    print("This option is not implemented yet.")
+    name = input("Dish name: ").strip()
+    if name == "":
+        print("The dish name cannot be empty.")
+        return
+    existing = restaurant_logic.find_dish(restaurant["menu"], name)
+    if existing is not None:
+        print(f"{existing} is already on the menu. Its price will be updated.")
+    price = ask_number("Price: ")
+    restaurant_logic.add_or_update_dish(restaurant["menu"], name, price)
+    try:
+        storage.save_restaurant_data(restaurant_path, restaurant)
+        print("Menu saved.")
+    except (OSError, ValueError) as error:
+        print(f"The menu could not be saved: {error}")
+        print("The change is kept for tonight and will be saved again on exit.")
 
 
 def show_status(restaurant):
@@ -100,6 +204,22 @@ def show_status(restaurant):
     for dish, price in restaurant["menu"].items():
         print(f"  - {dish}: {price:.2f}")
     print(f"Earnings tonight: {restaurant['earnings']:.2f}")
+
+
+def exit_option(restaurant, restaurant_path):
+    """Save the menu before closing (option 7). Return True to close, False to stay."""
+    if restaurant is None:
+        return True
+    if restaurant["tables"] or restaurant["waiting_list"]:
+        if not ask_yes_no("There are tables or groups still in the restaurant. Exit anyway?"):
+            return False
+    try:
+        storage.save_restaurant_data(restaurant_path, restaurant)
+        print("Menu saved.")
+    except (OSError, ValueError) as error:
+        print(f"The menu could not be saved: {error}")
+    return True
+
 
 def main():
     """Run the main menu loop until the user chooses to exit."""
@@ -123,8 +243,9 @@ def main():
         elif option == "6":
             show_status(restaurant)
         elif option == "7":
-            print("Goodbye!")
-            break
+            if exit_option(restaurant, restaurant_path):
+                print("Goodbye!")
+                break
         else:
             print("Invalid option.")
 
