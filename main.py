@@ -111,12 +111,16 @@ def load_groups_option(restaurant):
     if not groups:
         print("The file has no groups.")
         return
-    for customers in groups:
-        table_num = restaurant_logic.seat_group(restaurant, customers)
-        if table_num is None:
-            print(f"Group of {customers}: no room right now.")
-        else:
-            print(f"Group of {customers} -> table {table_num}")
+    rejected = restaurant_logic.add_to_waiting_list(restaurant, groups)
+    for customers in rejected:
+        print(f"Group of {customers} rejected: bigger than the restaurant ({restaurant['capacity']} people).")
+    seated = restaurant_logic.seat_waiting_groups(restaurant)
+    for customers, table_num in seated:
+        print(f"Group of {customers} -> table {table_num}")
+    if restaurant["waiting_list"]:
+        print(f"Waiting for a table: {restaurant['waiting_list']}")
+    else:
+        print("Nobody is waiting.")
 
 
 def take_order_option(restaurant):
@@ -165,6 +169,9 @@ def charge_table_option(restaurant):
         print(f"  - {order['dish']}: {order['price']:.2f}")
     bill = restaurant_logic.charge_and_release(restaurant, table["table_num"])
     print(f"Table {table['table_num']} paid {bill:.2f}. The table is free now.")
+    seated = restaurant_logic.seat_waiting_groups(restaurant)
+    for customers, table_num in seated:
+        print(f"Group of {customers} from the waiting list -> table {table_num}")
 
 
 def grow_menu_option(restaurant, restaurant_path):
