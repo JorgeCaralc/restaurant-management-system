@@ -103,33 +103,33 @@ def save_restaurant_data(path, restaurant):
 
 
 def _run_tests():
-    """Check the storage functions with the test files in tables/. No output means all passed."""
+    """Check the storage functions with the test files in test_data/. No output means all passed."""
     # A valid file returns the list of group sizes
-    assert load_groups("tables/groups_2.json") == [4, 2, 6, 3, 5, 2, 8]
+    assert load_groups("test_data/groups_2.json") == [4, 2, 6, 3, 5, 2, 8]
 
     # A group with wrong data rejects the whole file
     try:
-        load_groups("tables/groups_bad.json")
+        load_groups("test_data/groups_bad.json")
         assert False, "groups_bad.json should raise ValueError"
     except ValueError:
         pass
 
     # A badly written JSON is not caught here: it goes up to main.py
     try:
-        load_groups("tables/groups_broken.json")
+        load_groups("test_data/groups_broken.json")
         assert False, "groups_broken.json should raise JSONDecodeError"
     except json.JSONDecodeError:
         pass
 
     # A file that does not exist is not caught here either
     try:
-        load_groups("tables/does_not_exist.json")
+        load_groups("test_data/does_not_exist.json")
         assert False, "a missing file should raise FileNotFoundError"
     except FileNotFoundError:
         pass
 
     # list_group_files returns only .json names, sorted
-    files = list_group_files("tables")
+    files = list_group_files("test_data")
     assert "groups_2.json" in files
     assert files == sorted(files)
     for name in files:
@@ -149,26 +149,26 @@ def _run_tests():
 
     # A group file is not a restaurant (it is a list, not an object)
     try:
-        load_restaurant_data("tables/groups_2.json")
+        load_restaurant_data("test_data/groups_2.json")
         assert False, "a group file should raise ValueError"
     except ValueError:
         pass
 
     # A capacity that is true (not a whole number) is rejected
     try:
-        load_restaurant_data("tables/test_restaurants/restaurant_bad.json")
+        load_restaurant_data("test_data/restaurant_bad.json")
         assert False, "restaurant_bad.json should raise ValueError"
     except ValueError:
         pass
 
     # A negative price is rejected
     try:
-        load_restaurant_data("tables/test_restaurants/restaurant_bad_price.json")
+        load_restaurant_data("test_data/restaurant_bad_price.json")
         assert False, "restaurant_bad_price.json should raise ValueError"
     except ValueError:
         pass
 
-        # Saving writes only the 4 fixed keys, never tonight's data
+    # Saving writes only the 4 fixed keys, never tonight's data
     restaurant = {
         "name": "Casa Pepe",
         "capacity": 50,
@@ -179,7 +179,7 @@ def _run_tests():
         "earnings": 30.5,
         "waiting_list": [6, 3],
     }
-    saved_path = "tables/test_restaurants/restaurant_saved.json"
+    saved_path = "test_data/restaurant_saved.json"
     save_restaurant_data(saved_path, restaurant)
     with open(saved_path, encoding="utf-8") as file:
         saved = json.load(file)
