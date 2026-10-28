@@ -66,7 +66,44 @@ def load_restaurant_option(restaurant, restaurant_path):
 
 def load_groups_option(restaurant):
     """Load group requests from a file in tables/ and seat them (option 2)."""
-    print("This option is not implemented yet.")
+    try:
+        files = storage.list_group_files("tables")
+    except OSError as error:
+        print(f"Could not open the tables folder: {error}")
+        return
+    if not files:
+        print("There are no group files in tables/.")
+        return
+    number = 0
+    for name in files:
+        number += 1
+        print(f"{number}. {name}")
+    answer = input("File number (Enter to cancel): ").strip()
+    if answer == "":
+        return
+    chosen = None
+    number = 0
+    for name in files:
+        number += 1
+        if str(number) == answer:
+            chosen = name
+    if chosen is None:
+        print("That file is not in the list.")
+        return
+    try:
+        groups = storage.load_groups("tables/" + chosen)
+    except (OSError, ValueError) as error:
+        print(f"Could not load the groups: {error}")
+        return
+    if not groups:
+        print("The file has no groups.")
+        return
+    for customers in groups:
+        table_num = restaurant_logic.seat_group(restaurant, customers)
+        if table_num is None:
+            print(f"Group of {customers}: no room right now.")
+        else:
+            print(f"Group of {customers} -> table {table_num}")
 
 
 def take_order_option(restaurant):
