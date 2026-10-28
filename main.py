@@ -13,6 +13,7 @@ import storage
 
 def show_menu():
     """Print the main menu options."""
+    print()
     print("===== Restaurant Management System =====")
     print("1. Load restaurant")
     print("2. Load new group requests")
