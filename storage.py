@@ -86,6 +86,22 @@ def load_restaurant_data(path):
     }
 
 
+def save_restaurant_data(path, restaurant):
+    """Save only name, capacity, max_tables and menu to the restaurant file.
+
+    Tonight's data (tables, occupancy, earnings, waiting list) is never saved.
+    OSError is not caught here if the file cannot be written.
+    """
+    data = {
+        "name": restaurant["name"],
+        "capacity": restaurant["capacity"],
+        "max_tables": restaurant["max_tables"],
+        "menu": restaurant["menu"],
+    }
+    with open(path, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
+
+
 def _run_tests():
     """Check the storage functions with the test files in tables/. No output means all passed."""
     # A valid file returns the list of group sizes
@@ -150,6 +166,35 @@ def _run_tests():
         load_restaurant_data("tables/test_restaurants/restaurant_bad_price.json")
         assert False, "restaurant_bad_price.json should raise ValueError"
     except ValueError:
+        pass
+
+        # Saving writes only the 4 fixed keys, never tonight's data
+    restaurant = {
+        "name": "Casa Pepe",
+        "capacity": 50,
+        "max_tables": 5,
+        "menu": {"Callos a la madrileña": 12, "Bocata de calamares": 5.5},
+        "tables": [{"table_num": 1, "customers": 4, "status": "seated", "orders": []}],
+        "occupancy": 4,
+        "earnings": 30.5,
+        "waiting_list": [6, 3],
+    }
+    saved_path = "tables/test_restaurants/restaurant_saved.json"
+    save_restaurant_data(saved_path, restaurant)
+    with open(saved_path, encoding="utf-8") as file:
+        saved = json.load(file)
+    assert saved == {
+        "name": "Casa Pepe",
+        "capacity": 50,
+        "max_tables": 5,
+        "menu": {"Callos a la madrileña": 12, "Bocata de calamares": 5.5},
+    }
+
+    # A folder that does not exist cannot be written: OSError goes up to main.py
+    try:
+        save_restaurant_data("folder_that_does_not_exist/restaurant.json", restaurant)
+        assert False, "saving in a missing folder should raise OSError"
+    except OSError:
         pass
 
 
