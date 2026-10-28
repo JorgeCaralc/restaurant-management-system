@@ -55,6 +55,40 @@ def seat_group(restaurant, customers):
     restaurant["occupancy"] += customers
     return table_num
 
+
+def add_to_waiting_list(restaurant, groups):
+    """Add the new groups to the end of the waiting list, in arrival order.
+
+    A group bigger than the capacity would never fit, so it is not added.
+    Returns the list of rejected groups (it may be empty).
+    """
+    rejected = []
+    for customers in groups:
+        if customers > restaurant["capacity"]:
+            rejected.append(customers)
+        else:
+            restaurant["waiting_list"].append(customers)
+    return rejected
+
+
+def seat_waiting_groups(restaurant):
+    """Seat every waiting group that fits, in arrival order, using seat_group.
+
+    The groups that still do not fit stay in the waiting list, in the same order.
+    Returns a list of (customers, table_num) for the groups seated now.
+    """
+    seated = []
+    still_waiting = []
+    for customers in restaurant["waiting_list"]:
+        table_num = seat_group(restaurant, customers)
+        if table_num is None:
+            still_waiting.append(customers)
+        else:
+            seated.append((customers, table_num))
+    restaurant["waiting_list"] = still_waiting
+    return seated
+
+
 def get_tables(restaurant, status):
     """Return the active tables with the given status ("seated" or "ordered").
 
@@ -314,7 +348,38 @@ def _run_tests():
     assert menu["Cocido madrileño"] == 25
     assert "COCIDO madrileño" not in menu
     assert len(menu) == 4
-    
+
+    # add_to_waiting_list: groups join the end of the queue; a group bigger than the capacity is rejected
+    restaurant = create_restaurant(data)
+    assert add_to_waiting_list(restaurant, [4, 60, 2]) == [60]
+    assert restaurant["waiting_list"] == [4, 2]
+    assert add_to_waiting_list(restaurant, [3]) == []
+    assert restaurant["waiting_list"] == [4, 2, 3]
+
+    # seat_waiting_groups: seats every group that fits, in arrival order
+    assert seat_waiting_groups(restaurant) == [(4, 1), (2, 2), (3, 3)]
+    assert restaurant["waiting_list"] == []
+    assert restaurant["occupancy"] == 9
+
+    # seat_waiting_groups: only 5 tables, so the last 2 groups keep waiting in the same order
+    restaurant = create_restaurant(data)
+    add_to_waiting_list(restaurant, [4, 2, 6, 3, 5, 2, 8])
+    assert len(seat_waiting_groups(restaurant)) == 5
+    assert restaurant["waiting_list"] == [2, 8]
+
+    # seat_waiting_groups: a group that does not fit does not block the ones behind it
+    restaurant = create_restaurant(data)
+    seat_group(restaurant, 45)
+    add_to_waiting_list(restaurant, [10, 3])
+    assert seat_waiting_groups(restaurant) == [(3, 2)]
+    assert restaurant["waiting_list"] == [10]
+
+    # seat_waiting_groups: when a table is charged and freed, the waiting group gets it
+    register_order(restaurant["tables"][0], ["Cocido madrileño"], restaurant["menu"])
+    charge_and_release(restaurant, 1)
+    assert seat_waiting_groups(restaurant) == [(10, 1)]
+    assert restaurant["waiting_list"] == []
+
     print("All tests passed")
 
 if __name__ == "__main__":
