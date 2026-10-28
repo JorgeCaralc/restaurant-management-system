@@ -60,8 +60,20 @@ def ask_yes_no(prompt):
 
 def load_restaurant_option(restaurant, restaurant_path):
     """Load the restaurant from a JSON file (option 1)."""
-    print("This option is not implemented yet.")
-    return restaurant, restaurant_path
+    if restaurant is not None:
+        if not ask_yes_no("A restaurant is already loaded and tonight's data will be lost. Continue?"):
+            return restaurant, restaurant_path
+    path = input(f"Restaurant file (Enter = {restaurant_path}): ").strip()
+    if path == "":
+        path = restaurant_path
+    try:
+        data = storage.load_restaurant_data(path)
+    except (OSError, ValueError) as error:
+        print(f"Could not load the restaurant: {error}")
+        return restaurant, restaurant_path
+    new_restaurant = restaurant_logic.create_restaurant(data)
+    print(f"Restaurant {new_restaurant['name']} loaded.")
+    return new_restaurant, path
 
 
 def load_groups_option(restaurant):
