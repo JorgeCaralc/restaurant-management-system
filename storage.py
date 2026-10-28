@@ -48,6 +48,44 @@ def list_group_files(folder):
     return sorted(files)
 
 
+def load_restaurant_data(path):
+    """Read the restaurant file and return name, capacity, max_tables and menu.
+
+    Raises ValueError if a key is missing or a value is not valid.
+    FileNotFoundError and json.JSONDecodeError are not caught here.
+    """
+    with open(path, encoding="utf-8") as file:
+        data = json.load(file)
+
+    if not isinstance(data, dict):
+        raise ValueError("The restaurant file must be an object with name, capacity, max_tables and menu.")
+
+    for key in ["name", "capacity", "max_tables", "menu"]:
+        if key not in data:
+            raise ValueError(f'The restaurant file has no "{key}".')
+
+    if type(data["name"]) != str or data["name"].strip() == "":
+        raise ValueError('"name" must be a text that is not empty.')
+
+    for key in ["capacity", "max_tables"]:
+        if type(data[key]) != int or data[key] <= 0:
+            raise ValueError(f'"{key}" must be a whole number greater than 0.')
+
+    if not isinstance(data["menu"], dict):
+        raise ValueError('"menu" must be an object like {"Cocido madrileño": 20}.')
+
+    for dish, price in data["menu"].items():
+        if (type(price) != int and type(price) != float) or price <= 0:
+            raise ValueError(f'The price of "{dish}" must be a number greater than 0.')
+
+    return {
+        "name": data["name"],
+        "capacity": data["capacity"],
+        "max_tables": data["max_tables"],
+        "menu": data["menu"],
+    }
+
+
 def _run_tests():
     """Check the storage functions with the test files in tables/. No output means all passed."""
     # A valid file returns the list of group sizes
@@ -86,6 +124,32 @@ def _run_tests():
         list_group_files("folder_that_does_not_exist")
         assert False, "a missing folder should raise FileNotFoundError"
     except FileNotFoundError:
+        pass
+
+    # A valid restaurant file returns only the 4 fixed keys
+    restaurant = load_restaurant_data("data/restaurant.json")
+    assert len(restaurant) == 4
+    assert type(restaurant["capacity"]) == int
+
+    # A group file is not a restaurant (it is a list, not an object)
+    try:
+        load_restaurant_data("tables/groups_2.json")
+        assert False, "a group file should raise ValueError"
+    except ValueError:
+        pass
+
+    # A capacity that is true (not a whole number) is rejected
+    try:
+        load_restaurant_data("tables/test_restaurants/restaurant_bad.json")
+        assert False, "restaurant_bad.json should raise ValueError"
+    except ValueError:
+        pass
+
+    # A negative price is rejected
+    try:
+        load_restaurant_data("tables/test_restaurants/restaurant_bad_price.json")
+        assert False, "restaurant_bad_price.json should raise ValueError"
+    except ValueError:
         pass
 
 
